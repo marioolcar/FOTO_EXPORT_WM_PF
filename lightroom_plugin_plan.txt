@@ -1,0 +1,10 @@
+Ideje:
+    plugin koji importa develop presete
+    plugin koji dodaje plavi filter
+
+LrToolkitIdentifier
+
+25 stranica -> info.lua -> pogledaj
+
+postProcessRenderedPhotos = function( functionContext, filterContext ) ... end
+
