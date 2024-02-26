@@ -6,7 +6,7 @@ from tkinter import filedialog
 from tkinter import *
 import re
 from tkinter import ttk
-import tkinterDnD  # Importing the tkinterDnD module
+import tkinterDnD 
 from PIL import Image
 
 
@@ -24,6 +24,9 @@ watermark.set('Watermark jos nije odabran!')
 plavi = tk.StringVar();
 plavi.set('Plavi filter jos nije odabran!')
 
+
+
+
 def drop(event):
     # This function is called, when stuff is dropped into a widget
     global a
@@ -40,17 +43,17 @@ def drag_command(event):
 
 
 
-def odabir_foldera():
+def select_folder():
     directory = filedialog.askdirectory()
     folder.set(directory)
     print(folder.get())
 
-def odabir_watermarka():
+def select_watermark():
     directory = filedialog.askopenfilename()
     watermark.set(directory)
     print(watermark.get())
 
-def odabir_filtera():
+def select_filter():
     directory = filedialog.askopenfilename()
     plavi.set(directory)
     print(plavi.get())
@@ -127,31 +130,17 @@ def glavna_funk():
                         print("Failed to compress")
 
 
-
-
-
-
-
-
-
-# Without DnD hook you need to register the widget for every purpose,
-# and bind it to the function you want to call
-
-
 ime_eventa = Entry(root, width = 60)
 ime_eventa.insert(0,'20230517_panel_rasprava_bw_mario_olcar')
 ime_eventa.pack(padx = 10, pady = 10)
 
-
-b1 = ttk.Button(root, text="Odaberi folder za spremanje!", command=odabir_foldera)
+b1 = ttk.Button(root, text="Odaberi folder za spremanje!", command=select_folder)
 b1.pack(fill="both", expand=True, padx=10, pady=10)
 
-
-b2 = ttk.Button(root, text="Odaberi watermark!", command=odabir_watermarka)
+b2 = ttk.Button(root, text="Odaberi watermark!", command=select_watermark)
 b2.pack(fill="both", expand=True, padx=10, pady=3)
 
-
-b3 = ttk.Button(root, text="Odaberi plavi filter!", command=odabir_filtera)
+b3 = ttk.Button(root, text="Odaberi plavi filter!", command=select_filter)
 b3.pack(fill="both", expand=True, padx=10, pady=10)
 
 label_1 = tk.Label(root, textvar=folder, relief="solid")
@@ -163,9 +152,6 @@ label_watermark.pack(fill="both", expand=True, padx=10, pady=3)
 
 label_plavi = tk.Label(root, textvar=plavi, relief="solid")
 label_plavi.pack(fill="both", expand=True, padx=10, pady=10)
-
-
-
 
 label_2 = ttk.Label(root, ondrop=drop, ondragstart=drag_command,
                     textvar=stringvar, padding=50, relief="solid")
