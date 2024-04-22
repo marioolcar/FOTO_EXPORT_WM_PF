@@ -1,0 +1,5 @@
+path_plavi_filter
+path_watermark
+path_folder_za_spremanje
+
+sto u slucaju neispravnog pisanja?

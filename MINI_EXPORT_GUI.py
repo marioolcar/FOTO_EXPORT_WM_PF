@@ -8,6 +8,10 @@ import re
 from tkinter import ttk
 import tkinterDnD 
 from PIL import Image
+import json
+import random
+
+direktorij_za_eksport = "E:\PROGRAMIRANJE\JOBFAIR_LIGHTROOM_PLUGIN\PYTHON_EXPORT\FOTO_LIGHTROOM_PLUGIN\KRIVI_PUT"
 
 
 root = tkinterDnD.Tk()  
@@ -26,9 +30,8 @@ plavi.set('Plavi filter jos nije odabran!')
 
 
 
-
 def drop(event):
-    # This function is called, when stuff is dropped into a widget
+    # This function is called when stuff is dropped into a widget
     global a
     stringvar.set(event.data)
     print(stringvar.get())
@@ -39,12 +42,14 @@ def kreni():
 def drag_command(event):
     # This function is called at the start of the drag,
     # it returns the drag type, the content type, and the actual content
-    return (tkinterDnD.COPY, "DND_Text", "dolje uprava")
-
+    foo = ["kae z glavom", "dolje uprava", "baci baci", "nos ti posran"]
+    return (tkinterDnD.COPY, "DND_Text", random.choice(foo))
 
 
 def select_folder():
     directory = filedialog.askdirectory()
+    direktorij_za_eksport = directory
+    print("selektan: " + direktorij_za_eksport)
     folder.set(directory)
     print(folder.get())
 
@@ -58,22 +63,33 @@ def select_filter():
     plavi.set(directory)
     print(plavi.get())
 
+def citaj_podatke(): #podaci u obliku JSON dictionary     
+    f = open("demofile.txt", "r")
+    podatci = json.loads(f.read())
+    return podatci
+
 
 
 
 def glavna_funk():
 
-    overlay_path = plavi.get()
-    watermark_path = watermark.get()
+    #overlay_path = plavi.get()
+    #watermark_path = watermark.get()
     folder_path = folder.get()
+    print(Var1.get())
+    print(Var2.get())
+    print(Var3.get())
 
-    if Var3.get() == 1:
+    if int(Var3.get()) == 1:
         target_size = 1024
     else:
         target_size = 2048
 
-  #  overlay_path = 'E:\PROGRAMI\plavi_filter.png'
-   # watermark_path = 'E:\GOOGLE_DRIVE\FOTO_watermark - Copy.png'
+
+
+
+    overlay_path = 'plavi_filter.png'
+    watermark_path = 'FOTO_watermark.png'
     #folder_path = 'E:\GOOGLE_DRIVE\prijenos\TEST_PROGRAM'
 
     pattern = r'\{([^}]+)\}|([^ ]+)'
@@ -91,7 +107,15 @@ def glavna_funk():
         elif match[1]:
             file_paths.append(match[1])
     i = 0
+    
+    progres = ttk.Progressbar(root, orient=tk.HORIZONTAL)
+    progres.pack(fill="both", expand=True, padx=10, pady=10)
+    i = 0
+    j = len(file_paths)
+    progres['value'] = 0
     for image_path in file_paths:
+        print(direktorij_za_eksport)
+        progres['value'] += 5
         if image_path.lower().endswith(('.jpg', '.jpeg', '.png')):
                     try:
                         with Image.open(image_path) as image:
@@ -122,7 +146,7 @@ def glavna_funk():
                                 fr = int(math.sqrt(w * h * pow(0.15, 2)))
                                 watermark_resized = watermark_image.resize((fr, fr))
                                 image.paste(watermark_resized, (w - fr, h - fr), mask = watermark_resized)
-                            new_path = folder_path + '/' + ime_eventa.get() + '_' + str(i) + '.jpg';
+                            new_path = direktorij_za_eksport + '/' + ime_eventa.get() + '_' + str(i) + '.jpg';
                             i = i + 1
                             image.save(new_path, optimize=True, quality=100)
                             
@@ -134,15 +158,17 @@ ime_eventa = Entry(root, width = 60)
 ime_eventa.insert(0,'20230517_panel_rasprava_bw_mario_olcar')
 ime_eventa.pack(padx = 10, pady = 10)
 
+
+
 b1 = ttk.Button(root, text="Odaberi folder za spremanje!", command=select_folder)
 b1.pack(fill="both", expand=True, padx=10, pady=10)
-
+"""""
 b2 = ttk.Button(root, text="Odaberi watermark!", command=select_watermark)
 b2.pack(fill="both", expand=True, padx=10, pady=3)
 
 b3 = ttk.Button(root, text="Odaberi plavi filter!", command=select_filter)
 b3.pack(fill="both", expand=True, padx=10, pady=10)
-
+"""""
 label_1 = tk.Label(root, textvar=folder, relief="solid")
 label_1.pack(fill="both", expand=True, padx=10, pady=10)
 
@@ -154,7 +180,9 @@ label_plavi = tk.Label(root, textvar=plavi, relief="solid")
 label_plavi.pack(fill="both", expand=True, padx=10, pady=10)
 
 label_2 = ttk.Label(root, ondrop=drop, ondragstart=drag_command,
-                    textvar=stringvar, padding=50, relief="solid")
+                    textvar=stringvar, width=50,
+                    padding=50, relief="solid", font="helvetica 14", 
+justify="center", )
 label_2.pack(fill="both", expand=FALSE, padx=10, pady=10)
 
 Var1 = IntVar()
@@ -177,9 +205,7 @@ RBttn2 = Radiobutton(root, text = "2048", variable = Var3,
                      value = 2 )
 RBttn2.pack(padx = 5, pady = 5)
 
-
 b = ttk.Button(root, text="Kreni!", command=glavna_funk)
 b.pack(fill="both", expand=True, padx=10, pady=10)
-
 
 root.mainloop()
