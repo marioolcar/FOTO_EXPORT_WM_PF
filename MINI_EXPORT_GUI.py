@@ -10,8 +10,18 @@ import tkinterDnD
 from PIL import Image
 import json
 import random
+import ctypes  # An included library with Python install.
 
-direktorij_za_eksport = "E:\PROGRAMIRANJE\JOBFAIR_LIGHTROOM_PLUGIN\PYTHON_EXPORT\FOTO_LIGHTROOM_PLUGIN\KRIVI_PUT"
+
+
+def Mbox(title, text, style):
+    return ctypes.windll.user32.MessageBoxW(0, text, title, style)
+
+
+
+f = open("data.txt", "w")
+f.write("/KRIVI_PUT")
+
 
 
 root = tkinterDnD.Tk()  
@@ -27,7 +37,6 @@ watermark.set('Watermark jos nije odabran!')
 
 plavi = tk.StringVar();
 plavi.set('Plavi filter jos nije odabran!')
-
 
 
 def drop(event):
@@ -46,17 +55,17 @@ def drag_command(event):
     return (tkinterDnD.COPY, "DND_Text", random.choice(foo))
 
 
-def select_folder():
+def select_eksport_folder():
     directory = filedialog.askdirectory()
-    direktorij_za_eksport = directory
-    print("selektan: " + direktorij_za_eksport)
+    f = open("data.txt", "w")
+    f.write(directory)
     folder.set(directory)
-    print(folder.get())
 
 def select_watermark():
     directory = filedialog.askopenfilename()
     watermark.set(directory)
     print(watermark.get())
+    
 
 def select_filter():
     directory = filedialog.askopenfilename()
@@ -72,7 +81,17 @@ def citaj_podatke(): #podaci u obliku JSON dictionary
 
 
 def glavna_funk():
-
+    f = open("data.txt", "r")
+    
+    direktorij_za_eksport = f.read()
+    
+    if direktorij_za_eksport == "E:/PROGRAMIRANJE/JOBFAIR_LIGHTROOM_PLUGIN/PYTHON_EXPORT/FOTO_LIGHTROOM_PLUGIN/KRIVI_PUT":
+        Mbox('Greska!', 'Eksport folder nije odabran!', 0)
+        return
+        
+    
+    
+    print(direktorij_za_eksport)
     #overlay_path = plavi.get()
     #watermark_path = watermark.get()
     folder_path = folder.get()
@@ -108,14 +127,15 @@ def glavna_funk():
             file_paths.append(match[1])
     i = 0
     
-    progres = ttk.Progressbar(root, orient=tk.HORIZONTAL)
-    progres.pack(fill="both", expand=True, padx=10, pady=10)
+    
     i = 0
-    j = len(file_paths)
+    j = 0    
+    for _ in file_paths:
+        j += 1
     progres['value'] = 0
     for image_path in file_paths:
-        print(direktorij_za_eksport)
-        progres['value'] += 5
+        progres['value'] += int((1)/j * 100)
+        root.update()
         if image_path.lower().endswith(('.jpg', '.jpeg', '.png')):
                     try:
                         with Image.open(image_path) as image:
@@ -133,7 +153,7 @@ def glavna_funk():
                                 new_width = int(target_size * aspect_ratio)
 
                             # Resize and save the image
-                            image.resize((new_width, new_height))
+                            image = image.resize((new_width, new_height))
                             
                             if Var2.get() == 1: 
                                overlay_image = Image.open(overlay_path)
@@ -146,12 +166,22 @@ def glavna_funk():
                                 fr = int(math.sqrt(w * h * pow(0.15, 2)))
                                 watermark_resized = watermark_image.resize((fr, fr))
                                 image.paste(watermark_resized, (w - fr, h - fr), mask = watermark_resized)
-                            new_path = direktorij_za_eksport + '/' + ime_eventa.get() + '_' + str(i) + '.jpg';
+                                
+                            if i+1 < 10:
+                                new_path = direktorij_za_eksport + '/' + ime_eventa.get() + '_' + '0' +  str(i+1) + '.jpg'
+                            else:
+                                new_path = direktorij_za_eksport + '/' + ime_eventa.get() + '_' +  str(i+1) + '.jpg'
                             i = i + 1
                             image.save(new_path, optimize=True, quality=100)
                             
                     except OSError:
                         print("Failed to compress")
+                        
+    progres['value'] = 100
+    root.update()
+    Mbox("gotovo", "Sve fotke su eksportane!", 0)
+    
+                    
 
 
 ime_eventa = Entry(root, width = 60)
@@ -159,8 +189,7 @@ ime_eventa.insert(0,'20230517_panel_rasprava_bw_mario_olcar')
 ime_eventa.pack(padx = 10, pady = 10)
 
 
-
-b1 = ttk.Button(root, text="Odaberi folder za spremanje!", command=select_folder)
+b1 = ttk.Button(root, text="Odaberi folder za spremanje!", command=select_eksport_folder)
 b1.pack(fill="both", expand=True, padx=10, pady=10)
 """""
 b2 = ttk.Button(root, text="Odaberi watermark!", command=select_watermark)
@@ -207,5 +236,13 @@ RBttn2.pack(padx = 5, pady = 5)
 
 b = ttk.Button(root, text="Kreni!", command=glavna_funk)
 b.pack(fill="both", expand=True, padx=10, pady=10)
+
+
+
+plavi.set("Plavi filter se nalazi u folderu programa")
+watermark.set("Watermark se nalazi u folderu programa")
+
+progres = ttk.Progressbar(root, orient=tk.HORIZONTAL)
+progres.pack(fill="both", expand=True, padx=10, pady=10)
 
 root.mainloop()
