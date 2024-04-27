@@ -6,18 +6,52 @@ from tkinter import filedialog
 from tkinter import *
 import re
 from tkinter import ttk
-import tkinterDnD 
+#import tkinterDnD 
 from PIL import Image
 import json
 import random
 import ctypes  # An included library with Python install.
+from tk import *
+
+from dnd import *
+import hook
+from tk import Tk
+from constants import *
+
+import tkinter as tk
+from dnd import DnDWrapper
+import os.path
 
 
+def _init_tkdnd(master: tk.Tk) -> None:
+    """Add the tkdnd package to the auto_path, and import it"""
+
+    platform = master.tk.call("tk", "windowingsystem")
+
+    if platform == "win32":
+        folder = "windows"
+    elif platform == "x11":
+        folder = "linux"
+    elif platform == "aqua":
+        folder = "mac"
+
+    package_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), folder)
+
+    master.tk.call('lappend', 'auto_path', package_dir)
+
+    TkDnDVersion = master.tk.call('package', 'require', 'tkdnd')
+
+    return TkDnDVersion
+
+
+class Tk(tk.Tk, DnDWrapper):
+    def __init__(self, *args, **kwargs):
+        tk.Tk.__init__(self, *args, **kwargs)
+        self.TkDnDVersion = _init_tkdnd(self)
 
 
 def Mbox(title, text, style):
     return ctypes.windll.user32.MessageBoxW(0, text, title, style)
-
 
 
 f = open("data.txt", "w")
@@ -25,7 +59,7 @@ f.write("/KRIVI_PUT")
 
 
 
-root = tkinterDnD.Tk()  
+root = Tk()  
 root.title("Mini_export_FOTOKSET beta")
 
 stringvar = tk.StringVar()
@@ -53,7 +87,7 @@ def drag_command(event):
     # This function is called at the start of the drag,
     # it returns the drag type, the content type, and the actual content
     foo = ["kae z glavom", "dolje uprava", "baci baci", "nos ti posran"]
-    return (tkinterDnD.COPY, "DND_Text", random.choice(foo))
+    return (COPY, "DND_Text", random.choice(foo))
 
 
 def select_eksport_folder():
