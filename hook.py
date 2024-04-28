@@ -1,9 +1,3 @@
-"""
-Author: rdbende
-License: MIT license
-Copyright: 2021 rdbende
-"""
-
 from ttkwidgets.hook import hook_ttk_widgets, is_hooked
 
 

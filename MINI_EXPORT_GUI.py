@@ -6,7 +6,6 @@ from tkinter import filedialog
 from tkinter import *
 import re
 from tkinter import ttk
-#import tkinterDnD 
 from PIL import Image
 import json
 import random
@@ -24,6 +23,8 @@ import os.path
 
 
 def _init_tkdnd(master: tk.Tk) -> None:
+    """DRAG N DROP"""
+
     """Add the tkdnd package to the auto_path, and import it"""
 
     platform = master.tk.call("tk", "windowingsystem")
@@ -36,11 +37,8 @@ def _init_tkdnd(master: tk.Tk) -> None:
         folder = "mac"
 
     package_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), folder)
-
     master.tk.call('lappend', 'auto_path', package_dir)
-
     TkDnDVersion = master.tk.call('package', 'require', 'tkdnd')
-
     return TkDnDVersion
 
 
@@ -86,7 +84,7 @@ def kreni():
 def drag_command(event):
     # This function is called at the start of the drag,
     # it returns the drag type, the content type, and the actual content
-    foo = ["kae z glavom", "dolje uprava", "baci baci", "nos ti posran"]
+    foo = ["kae z glavom", "baci baci", "nos ti posran"]
     return (COPY, "DND_Text", random.choice(foo))
 
 

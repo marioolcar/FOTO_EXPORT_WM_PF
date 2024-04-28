@@ -1,9 +1,3 @@
-"""
-Author: rdbende
-License: MIT license
-Copyright: 2017 Michael Lange, 2021 rdbende
-"""
-
 import tkinter as tk
 
 
