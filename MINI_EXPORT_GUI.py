@@ -57,6 +57,9 @@ f.write("/KRIVI_PUT")
 
 
 
+
+
+
 root = Tk()  
 root.title("Mini_export_FOTOKSET beta")
 
@@ -196,9 +199,9 @@ def glavna_funk():
                             if Var1.get() == 1:
                                 watermark_image = Image.open(watermark_path)
                                 w, h = image.size
-                                fr = int(math.sqrt(w * h * pow(0.15, 2)))
+                                fr = int(math.sqrt(w * h * pow(0.2, 2)))
                                 watermark_resized = watermark_image.resize((fr, fr))
-                                image.paste(watermark_resized, (w - fr, h - fr), mask = watermark_resized)
+                                image.paste(watermark_resized, (int(w - fr - 0.05 * fr), int(h - fr + 0.22*fr)), mask = watermark_resized)
                                 
                             if i+1 < 10:
                                 new_path = direktorij_za_eksport + '/' + ime_eventa.get() + '_' + '0' +  str(i+1) + '.jpg'
