@@ -115,6 +115,132 @@ def citaj_podatke(): #podaci u obliku JSON dictionary
 
 
 
+def super_mode():
+    f = open("data.txt", "r")
+    
+    direktorij_za_eksport = f.read()
+    
+    if direktorij_za_eksport == "E:/PROGRAMIRANJE/JOBFAIR_LIGHTROOM_PLUGIN/PYTHON_EXPORT/FOTO_LIGHTROOM_PLUGIN/KRIVI_PUT":
+        Mbox('Greska!', 'Eksport folder nije odabran!', 0)
+        return
+    
+    print(direktorij_za_eksport)
+    #overlay_path = plavi.get()
+    #watermark_path = watermark.get()
+    folder_path = folder.get()
+    print(waterMarkCheckVar.get())
+    print(blueCheckVar.get())
+    print(resolutionVar.get())
+
+    if int(resolutionVar.get()) == 1:
+        target_size = 1024
+    else:
+        target_size = 2048
+
+    overlay_path = 'plavi_filter.png'
+    watermark_path = 'FOTO_watermark.png'
+    #folder_path = 'E:\GOOGLE_DRIVE\prijenos\TEST_PROGRAM'
+
+    pattern = r'\{([^}]+)\}|([^ ]+)'
+    matches = re.findall(pattern, stringvar.get())
+
+    # Initialize an empty list to store individual file paths
+    file_paths = []
+
+    # Iterate through the matches and add them to the list
+    for match in matches:
+        # If the match is enclosed in curly braces, use the content inside the braces
+        if match[0]:
+            file_paths.append(match[0])
+        # If the match is not enclosed in curly braces, use the whole match
+        elif match[1]:
+            file_paths.append(match[1])
+    i = 0
+    j = 0    
+    for _ in file_paths:
+        j += 1
+    progres['value'] = 0
+    glav_petlja_brojac = 0
+    glav_direktorij_za_eksport = direktorij_za_eksport
+    
+    ime_fotke_event = ime_eventa.get()
+    
+    ime_fotke_event = ime_fotke_event.replace("_bb_", "_xx_")
+    ime_fotke_event = ime_fotke_event.replace("_bw_", "_xx_")
+    ime_fotke_event = ime_fotke_event.replace("_fb_", "_xx_")
+    ime_fotke_event = ime_fotke_event.replace("_fw_", "_xx_")
+    
+    pricuv_ime_fotke_event = ime_fotke_event
+    
+    
+    while glav_petlja_brojac < 4:
+        ime_fotke_event = pricuv_ime_fotke_event
+        if glav_petlja_brojac == 0:
+            ime_fotke_event = ime_fotke_event.replace("_xx_", "_bb_")
+        if glav_petlja_brojac == 1:
+            ime_fotke_event = ime_fotke_event.replace("_xx_", "_bw_")
+        if glav_petlja_brojac == 2:
+            ime_fotke_event = ime_fotke_event.replace("_xx_", "_fb_")
+        if glav_petlja_brojac == 3:
+            ime_fotke_event = ime_fotke_event.replace("_xx_", "_fw_")
+        
+        direktorij_za_eksport = glav_direktorij_za_eksport + "/" + ime_fotke_event
+        os.mkdir(direktorij_za_eksport)
+
+        brojac = 1
+        for image_path in file_paths:
+            
+            progres['value'] += int((1)/j * 100 / 3)
+            root.update()
+            if image_path.lower().endswith(('.jpg', '.jpeg', '.png')):
+                        with Image.open(image_path) as image:
+                            width, height = image.size
+                            # Calculate the aspect ratio
+                            aspect_ratio = width / height
+                            # Set the new width and height based on the target size and aspect ratio
+                            if aspect_ratio > 1:  # Landscape image
+                                new_width = target_size
+                                new_height = int(target_size / aspect_ratio)
+                            else:  # Portrait image
+                                new_height = target_size
+                                new_width = int(target_size * aspect_ratio)
+                            # Resize and save the image
+                            image = image.resize((new_width, new_height))
+                            
+                            znakFilter = "b"
+                            znakWatermark = "b"
+                            
+                            if glav_petlja_brojac >= 2: 
+                                overlay_image = Image.open(overlay_path)
+                                overlay_resized = overlay_image.resize(image.size)
+                                image.paste(overlay_resized, (0, 0), mask=overlay_resized)
+                                znakFilter = "f"
+
+                            if (glav_petlja_brojac+1) % 2 == 0:
+                                watermark_image = Image.open(watermark_path)
+                                w, h = image.size
+                                fr = int(math.sqrt(w * h * pow(0.2, 2)))
+                                watermark_resized = watermark_image.resize((fr, fr))
+                                image.paste(watermark_resized, (int(w - fr - 0.05 * fr), int(h - fr + 0.22*fr)), mask = watermark_resized)
+                                znakWatermark = "w"
+                            if i+1 < 10:
+                                new_path = direktorij_za_eksport + '/' + ime_fotke_event + '_' + '0' +  str(brojac) + '.jpg'
+                            else:
+                                new_path = direktorij_za_eksport + '/' + ime_fotke_event + '_' +  str(brojac) + '.jpg'
+                            brojac = brojac + 1
+                            image.save(new_path, optimize=True, quality=100)
+                            print(new_path)
+                        
+        glav_petlja_brojac = glav_petlja_brojac + 1
+                        
+    progres['value'] = 100
+    root.update()
+    Mbox("gotovo", "Sve fotke su eksportane!", 0)
+    
+
+
+
+
 
 def glavna_funk():
     f = open("data.txt", "r")
@@ -124,18 +250,17 @@ def glavna_funk():
     if direktorij_za_eksport == "E:/PROGRAMIRANJE/JOBFAIR_LIGHTROOM_PLUGIN/PYTHON_EXPORT/FOTO_LIGHTROOM_PLUGIN/KRIVI_PUT":
         Mbox('Greska!', 'Eksport folder nije odabran!', 0)
         return
-        
     
     
     print(direktorij_za_eksport)
     #overlay_path = plavi.get()
     #watermark_path = watermark.get()
     folder_path = folder.get()
-    print(Var1.get())
-    print(Var2.get())
-    print(Var3.get())
+    print(waterMarkCheckVar.get())
+    print(blueCheckVar.get())
+    print(resolutionVar.get())
 
-    if int(Var3.get()) == 1:
+    if int(resolutionVar.get()) == 1:
         target_size = 1024
     else:
         target_size = 2048
@@ -191,12 +316,12 @@ def glavna_funk():
                             # Resize and save the image
                             image = image.resize((new_width, new_height))
                             
-                            if Var2.get() == 1: 
+                            if blueCheckVar.get() == 1: 
                                overlay_image = Image.open(overlay_path)
                                overlay_resized = overlay_image.resize(image.size)
                                image.paste(overlay_resized, (0, 0), mask=overlay_resized)
 
-                            if Var1.get() == 1:
+                            if waterMarkCheckVar.get() == 1:
                                 watermark_image = Image.open(watermark_path)
                                 w, h = image.size
                                 fr = int(math.sqrt(w * h * pow(0.2, 2)))
@@ -250,28 +375,32 @@ label_2 = ttk.Label(root, ondrop=drop, ondragstart=drag_command,
 justify="center", )
 label_2.pack(fill="both", expand=FALSE, padx=10, pady=10)
 
-Var1 = IntVar()
-Var2 = IntVar()
+waterMarkCheckVar = IntVar()
+blueCheckVar = IntVar()
 
-ChkBttn = Checkbutton(root,text= "Watermark", width = 15, variable = Var1)
+ChkBttn = Checkbutton(root,text= "Watermark", width = 15, variable = waterMarkCheckVar)
 ChkBttn.pack(padx = 5, pady = 5)
 
-ChkBttn2 = Checkbutton(root,text= "Plavi filter",  width = 15, variable = Var2)
+ChkBttn2 = Checkbutton(root,text= "Plavi filter",  width = 15, variable = blueCheckVar)
 ChkBttn2.pack(padx = 5, pady = 5)
 
-Var3 = StringVar()
-Var3.set(2)
+resolutionVar = StringVar()
+resolutionVar.set(2)
 
-RBttn = Radiobutton(root, text = "1024", variable = Var3,
+RBttn = Radiobutton(root, text = "1024", variable = resolutionVar,
                     value = 1)
 RBttn.pack(padx = 5, pady = 5)
 
-RBttn2 = Radiobutton(root, text = "2048", variable = Var3,
+RBttn2 = Radiobutton(root, text = "2048", variable = resolutionVar,
                      value = 2 )
 RBttn2.pack(padx = 5, pady = 5)
 
 b = ttk.Button(root, text="Kreni!", command=glavna_funk)
 b.pack(fill="both", expand=True, padx=10, pady=10)
+
+b = ttk.Button(root, text="SUPER MODE", command=super_mode)
+b.pack(fill="both", expand=True, padx=10, pady=10)
+
 
 
 
