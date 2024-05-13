@@ -223,7 +223,7 @@ def super_mode():
                                 watermark_resized = watermark_image.resize((fr, fr))
                                 image.paste(watermark_resized, (int(w - fr - 0.05 * fr), int(h - fr + 0.22*fr)), mask = watermark_resized)
                                 znakWatermark = "w"
-                            if i+1 < 10:
+                            if brojac < 10:
                                 new_path = direktorij_za_eksport + '/' + ime_fotke_event + '_' + '0' +  str(brojac) + '.jpg'
                             else:
                                 new_path = direktorij_za_eksport + '/' + ime_fotke_event + '_' +  str(brojac) + '.jpg'
@@ -316,7 +316,7 @@ def glavna_funk():
                             # Resize and save the image
                             image = image.resize((new_width, new_height))
                             
-                            if blueCheckVar.get() == 1: 
+                            if blueCheckVar.get() : 
                                overlay_image = Image.open(overlay_path)
                                overlay_resized = overlay_image.resize(image.size)
                                image.paste(overlay_resized, (0, 0), mask=overlay_resized)
