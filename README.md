@@ -1,3 +1,3 @@
 # FOTO_EXPORT_WM_PF
 
-Rješenje za automatizirano dodavanje plavog filtera ili nekog overlaya na fotografiju bez potrebe da se koristi photoshop ili nekakav drugi program koji zahtjeva puno resursa.
+Program za dodavanje plavog filtera ili overlaya i watermarka na fotografije.
