@@ -1,3 +1,3 @@
 # FOTO_EXPORT_WM_PF
 
-Program za dodavanje plavog filtera ili overlaya i watermarka na fotografije.
+Program za dodavanje overlaya i watermarka na fotografije.
