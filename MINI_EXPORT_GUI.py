@@ -21,6 +21,16 @@ import tkinter as tk
 from dnd import DnDWrapper
 import os.path
 
+def save_with_limit(image, path, max_size=250*1024, quality=95):
+    """Pokušava spremiti sliku tako da ne prelazi max_size bajtova."""
+    temp_quality = quality  # Početna kvaliteta
+    while temp_quality > 10:  # Sprječava preveliko smanjenje kvalitete
+        image.save(path, optimize=True, quality=temp_quality)
+        if os.path.getsize(path) <= max_size:
+            break  # Ako je manja od 250 KB, završavamo
+        temp_quality -= 1  # Smanjujemo kvalitetu za 5%
+
+
 
 def _init_tkdnd(master: tk.Tk) -> None:
     """DRAG N DROP"""
@@ -131,6 +141,7 @@ def glavna_funk():
     print(Var1.get())
     print(Var2.get())
     print(Var3.get())
+    print(Var_velicina.get())
 
     if int(Var3.get()) == 1:
         target_size = 1024
@@ -205,7 +216,11 @@ def glavna_funk():
                             else:
                                 new_path = direktorij_za_eksport + '/' + ime_eventa.get() + '_' +  str(i+1) + '.jpg'
                             i = i + 1
-                            image.save(new_path, optimize=True, quality=100)
+                            if Var_velicina.get() == 1:
+                                save_with_limit(image, new_path)
+                                print("\nosam\n\nosam\n\nosam\n")
+                            else:
+                                image.save(new_path, optimize=True, quality=100)
                             
                     except OSError:
                         print("Failed to compress")
@@ -249,8 +264,13 @@ label_2.pack(fill="both", expand=FALSE, padx=10, pady=10)
 
 Var1 = IntVar()
 Var2 = IntVar()
+Var_velicina = IntVar()
+
 
 ChkBttn = Checkbutton(root,text= "Watermark", width = 15, variable = Var1)
+ChkBttn.pack(padx = 5, pady = 5)
+
+ChkBttn = Checkbutton(root,text= "VEL <250KB", width = 15, variable = Var_velicina)
 ChkBttn.pack(padx = 5, pady = 5)
 
 ChkBttn2 = Checkbutton(root,text= "Plavi filter",  width = 15, variable = Var2)
