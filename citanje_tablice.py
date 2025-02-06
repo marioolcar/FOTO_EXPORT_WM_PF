@@ -4,6 +4,7 @@
 
 import pandas as pd
 import unidecode
+import re
 
 #pd.options.display.max_rows = 999
 pd.set_option('display.max_colwidth', None)
@@ -21,6 +22,8 @@ df = pd.read_csv(CSV_URL,  encoding='utf-8')
 def formatiraj_koncert(koncert):
     if pd.isna(koncert):  # Ako je NaN ili None, vrati ga bez promjene
         return koncert
+    koncert = re.sub(r'\[.*?\]', '', koncert)  # Ukloni tekst unutar uglatih zagrada
+    
     # Zamjena razmaka s '_', pretvaranje u mala slova, uklanjanje dijakritičkih znakova
     koncert = unidecode.unidecode(koncert)  # Ukloni dijakritičke znakove
     koncert = koncert.lower()  # Pretvori u mala slova
