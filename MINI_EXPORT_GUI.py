@@ -6,7 +6,7 @@ from tkinter import filedialog
 from tkinter import *
 import re
 from tkinter import ttk
-from PIL import Image
+from PIL import Image, ImageEnhance
 import json
 import random
 import ctypes  # An included library with Python install.
@@ -29,6 +29,22 @@ def save_with_limit(image, path, max_size=250*1024, quality=95):
         if os.path.getsize(path) <= max_size:
             break  # Ako je manja od 250 KB, završavamo
         temp_quality -= 1  # Smanjujemo kvalitetu za 5%
+        
+        
+def ReduceOpacity(im, opacity):
+    """
+    Returns an image with reduced opacity.
+    Taken from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/362879
+    """
+    assert opacity >= 0 and opacity <= 1
+    if im.mode != 'RGBA':
+        im = im.convert('RGBA')
+    else:
+        im = im.copy()
+    alpha = im.split()[3]
+    alpha = ImageEnhance.Brightness(alpha).enhance(opacity)
+    im.putalpha(alpha)
+    return im
 
 
 
@@ -209,6 +225,7 @@ def glavna_funk():
                                 w, h = image.size
                                 fr = int(math.sqrt(w * h * pow(0.15, 2)))
                                 watermark_resized = watermark_image.resize((fr, fr))
+                                watermark_resized = ReduceOpacity(watermark_resized, 0.75)
                                 image.paste(watermark_resized, (w - fr, h - fr), mask = watermark_resized)
                                 
                             if i+1 < 10:
