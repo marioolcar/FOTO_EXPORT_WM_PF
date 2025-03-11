@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="hr">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>FOTO GALERIJA EXPORT</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+		<style>
+			#drop-area {
+				border: 2px dashed #ccc;
+				padding: 20px;
+				text-align: center;
+				cursor: pointer;
+			}
+			#stanje {
+				border: 2px dashed #ccc;
+				padding: 20px;
+				text-align: center;
+				cursor: pointer;
+			}
+			body {
+				font-family: Arial, sans-serif;
+				background-color: #f4f4f4;
+				text-align: center;
+				padding: 20px;
+			}
+
+			h1 {
+				color: #333;
+				font-size: 24px;
+			}
+
+			#drop-area {
+				border: 2px dashed #007bff;
+				background-color: #fff;
+				padding: 30px;
+				width: 80%;
+				max-width: 500px;
+				margin: 20px auto;
+				text-align: center;
+				font-size: 18px;
+				color: #555;
+				cursor: pointer;
+				transition: all 0.3s ease;
+				border-radius: 10px;
+			}
+
+			#drop-area:hover {
+				background-color: #e3f2fd;
+				border-color: #0056b3;
+			}
+
+			input {
+				width: 80%;
+				max-width: 300px;
+				padding: 10px;
+				margin: 10px;
+				font-size: 16px;
+				border: 1px solid #ccc;
+				border-radius: 5px;
+			}
+
+			button {
+				background-color: #007bff;
+				color: white;
+				border: none;
+				padding: 12px 20px;
+				font-size: 18px;
+				border-radius: 5px;
+				cursor: pointer;
+				transition: background-color 0.3s ease;
+			}
+
+			button:hover {
+				background-color: #0056b3;
+			}
+
+			#stanje {
+				margin-top: 15px;
+				font-size: 18px;
+				color: #007bff;
+				font-weight: bold;
+			}
+
+			/* Responsivni dizajn za manje ekrane */
+			@media (max-width: 600px) {
+				#drop-area,
+				input,
+				button {
+					width: 90%;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Batch Export Fotografija za galeriju</h1>
+		<div id="drop-area">Povuci i ispusti slike ovdje</div>
+		<!--	<input type="number" id="resize-input" placeholder="Kraća stranica (px)" /> -->
+		<input type="text" id="imenovanje" placeholder="Imenovanje" />
+
+		<button onclick="processImages_bb()">bb</button>
+		<button onclick="processImages_bw()">bw</button>
+		<button onclick="processImages_fb()">fb</button>
+		<button onclick="processImages_fw()">fw</button>
+
+		<div id="stanje"></div>
+		<progress
+			id="progress-bar"
+			value="0"
+			max="100"
+			style="width: 100%; display: none"
+		></progress>
+
+		<div id="preview-container"></div>
+		<script>
+			function compressImage(
+				canvas,
+				callback,
+				quality = 1,
+				minQuality = 0.1,
+				targetSize = 9999999999999
+			) {
+				canvas.toBlob(
+					(blob) => {
+						if (blob.size <= targetSize || quality <= minQuality) {
+							callback(blob); // Ako je slika dovoljno mala, koristi ovu verziju
+						} else {
+							// Smanjuj kvalitetu i pokušaj ponovo
+							compressImage(
+								canvas,
+								callback,
+								quality - 0.1,
+								minQuality,
+								targetSize
+							);
+						}
+					},
+					"image/jpeg",
+					quality
+				);
+			}
+
+			const overlay = new Image();
+			overlay.src = "./plavi_filter.png";
+
+			const watermark = new Image();
+			watermark.src = "./FOTO_watermark.png";
+			let images = [];
+			const dropArea = document.getElementById("drop-area");
+			const stanje = document.getElementById("stanje");
+
+			dropArea.addEventListener("dragover", (e) => {
+				e.preventDefault();
+				dropArea.style.borderColor = "blue";
+			});
+
+			dropArea.addEventListener("drop", (e) => {
+				e.preventDefault();
+				dropArea.innerHTML = "fotke";
+				dropArea.style.borderColor = "#ccc";
+				handleFiles(e.dataTransfer.files);
+			});
+
+			function handleFiles(files) {
+				let fileListHTML = "<strong>Dodane slike:</strong><br>"; // Početak liste
+
+				for (let file of files) {
+					if (file.type.startsWith("image/")) {
+						const reader = new FileReader();
+						reader.onload = (event) => images.push(event.target.result);
+						reader.readAsDataURL(file);
+
+						// Dodaj ime u listu
+						fileListHTML += `${file.name}<br>`;
+					}
+				}
+
+				// Prikaži listu u drop-area
+				document.getElementById("drop-area").innerHTML = fileListHTML;
+			}
+
+			function processImages_bw() {
+				//const resizeValue = parseInt(document.getElementById("resize-input").value) || 500;
+				const resizeValue = 2048;
+				const previewContainer = document.getElementById("preview-container");
+				previewContainer.innerHTML = ""; // Očisti prethodne slike
+
+				const overlay = new Image();
+				overlay.src = "./plavi_filter.png";
+				const watermark = new Image();
+				watermark.src = "./FOTO_watermark.png";
+
+				overlay.onload = () => {
+					watermark.onload = async () => {
+						const zip = new JSZip();
+						let processedImages = []; // Svi procesirani outputi će se ovde spremati
+
+						for (let i = 0; i < images.length; i++) {
+							let src = images[i]; // Svaka slika posebno
+							let brojac = i + 1; // Brojimo slike od 1 nadalje
+
+							stanje.innerHTML = `Učitano fotki: ${brojac}`;
+
+							const img = new Image();
+							img.src = src;
+							await new Promise((resolve) => (img.onload = resolve));
+
+							const canvas = document.createElement("canvas");
+							const ctx = canvas.getContext("2d");
+
+							let scale = resizeValue / Math.min(img.width, img.height);
+							canvas.width = img.width * scale;
+							canvas.height = img.height * scale;
+
+							ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+							ctx.globalAlpha = 0.75;
+
+							let wmHeight = Math.round(
+								Math.sqrt(canvas.width * canvas.height * 0.2 * 0.2)
+							);
+							ctx.drawImage(
+								watermark,
+								canvas.width - wmHeight - Math.round(0.05 * wmHeight),
+								canvas.height - wmHeight + Math.round(0.22 * wmHeight),
+								wmHeight,
+								wmHeight
+							);
+
+							// Kreiraj promise za svaku kompresiju slike
+							let promise = new Promise((resolve) => {
+								compressImage(canvas, (compressedBlob) => {
+									zip.file(
+										`${
+											document.getElementById("imenovanje").value
+										}_${brojac}.jpg`,
+										compressedBlob
+									);
+									// Prikaži sliku u pregledu
+									const previewImage = document.createElement("img");
+									previewImage.src = URL.createObjectURL(compressedBlob);
+									previewImage.style.maxHeight = "150px";
+									previewImage.style.margin = "5px";
+									previewContainer.appendChild(previewImage);
+									resolve(); // Obavesti da je ova slika završena
+								});
+							});
+
+							processedImages.push(promise);
+						}
+
+						// Čekaj da SVE slike budu dodane prije generiranja ZIP-a
+						await Promise.all(processedImages);
+
+						zip
+							.generateAsync(
+								{ type: "blob", compression: "STORE" },
+								(metadata) => {
+									stanje.innerHTML = `GENERIRANJE ZIPA ${
+										Math.round(metadata.percent * 100) / 100
+									}%`;
+
+									const progressBar = document.getElementById("progress-bar");
+									progressBar.style.display = "block"; // Prikaži progress bar
+									progressBar.value = (metadata.percent || 0).toFixed(0); // Postavi postotak
+								}
+							)
+							.then((content) => {
+								saveAs(
+									content,
+									`${document.getElementById("imenovanje").value}.zip`
+								);
+								document.getElementById("progress-bar").style.display = "none"; // Sakrij progress bar kad završi
+							});
+					};
+				};
+			}
+
+			function processImages_bb() {
+				//const resizeValue = parseInt(document.getElementById("resize-input").value) || 500;
+				const resizeValue = 2048;
+				const previewContainer = document.getElementById("preview-container");
+				previewContainer.innerHTML = ""; // Očisti prethodne slike
+
+				const overlay = new Image();
+				overlay.src = "./plavi_filter.png";
+				const watermark = new Image();
+				watermark.src = "./FOTO_watermark.png";
+
+				overlay.onload = () => {
+					watermark.onload = async () => {
+						const zip = new JSZip();
+						let processedImages = []; // Svi procesirani outputi će se ovde spremati
+
+						for (let i = 0; i < images.length; i++) {
+							let src = images[i]; // Svaka slika posebno
+							let brojac = i + 1; // Brojimo slike od 1 nadalje
+
+							stanje.innerHTML = `Učitano fotki: ${brojac}`;
+
+							const img = new Image();
+							img.src = src;
+							await new Promise((resolve) => (img.onload = resolve));
+
+							const canvas = document.createElement("canvas");
+							const ctx = canvas.getContext("2d");
+
+							let scale = resizeValue / Math.min(img.width, img.height);
+							canvas.width = img.width * scale;
+							canvas.height = img.height * scale;
+
+							ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+							ctx.globalAlpha = 0.75;
+
+							let wmHeight = Math.round(
+								Math.sqrt(canvas.width * canvas.height * 0.2 * 0.2)
+							);
+							/*ctx.drawImage(
+								watermark,
+								canvas.width - wmHeight - Math.round(0.05 * wmHeight),
+								canvas.height - wmHeight + Math.round(0.22 * wmHeight),
+								wmHeight,
+								wmHeight
+							);
+							*/
+
+							// Kreiraj promise za svaku kompresiju slike
+							let promise = new Promise((resolve) => {
+								compressImage(canvas, (compressedBlob) => {
+									zip.file(
+										`${
+											document.getElementById("imenovanje").value
+										}_${brojac}.jpg`,
+										compressedBlob
+									);
+									// Prikaži sliku u pregledu
+									const previewImage = document.createElement("img");
+									previewImage.src = URL.createObjectURL(compressedBlob);
+									previewImage.style.maxHeight = "150px";
+									previewImage.style.margin = "5px";
+									previewContainer.appendChild(previewImage);
+									resolve(); // Obavesti da je ova slika završena
+								});
+							});
+
+							processedImages.push(promise);
+						}
+
+						// Čekaj da SVE slike budu dodane prije generiranja ZIP-a
+						await Promise.all(processedImages);
+
+						zip
+							.generateAsync(
+								{ type: "blob", compression: "STORE" },
+								(metadata) => {
+									const progressBar = document.getElementById("progress-bar");
+									stanje.innerHTML = `GENERIRANJE ZIPA ${
+										Math.round(metadata.percent * 100) / 100
+									}%`;
+
+									progressBar.style.display = "block"; // Prikaži progress bar
+									progressBar.value = (metadata.percent || 0).toFixed(0); // Postavi postotak
+								}
+							)
+							.then((content) => {
+								saveAs(
+									content,
+									`${document.getElementById("imenovanje").value}.zip`
+								);
+								document.getElementById("progress-bar").style.display = "none"; // Sakrij progress bar kad završi
+							});
+					};
+				};
+			}
+
+			function processImages_fb() {
+				//const resizeValue = parseInt(document.getElementById("resize-input").value) || 500;
+				const resizeValue = 2048;
+				const previewContainer = document.getElementById("preview-container");
+				previewContainer.innerHTML = ""; // Očisti prethodne slike
+
+				const overlay = new Image();
+				overlay.src = "./plavi_filter.png";
+				const watermark = new Image();
+				watermark.src = "./FOTO_watermark.png";
+
+				overlay.onload = () => {
+					watermark.onload = async () => {
+						const zip = new JSZip();
+						let processedImages = []; // Svi procesirani outputi će se ovde spremati
+
+						for (let i = 0; i < images.length; i++) {
+							let src = images[i]; // Svaka slika posebno
+							let brojac = i + 1; // Brojimo slike od 1 nadalje
+
+							stanje.innerHTML = `Učitano fotki: ${brojac}`;
+
+							const img = new Image();
+							img.src = src;
+							await new Promise((resolve) => (img.onload = resolve));
+
+							const canvas = document.createElement("canvas");
+							const ctx = canvas.getContext("2d");
+
+							let scale = resizeValue / Math.min(img.width, img.height);
+							canvas.width = img.width * scale;
+							canvas.height = img.height * scale;
+
+							ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+							ctx.globalAlpha = 1;
+							ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+
+							/*
+
+                            let wmHeight = Math.round(
+								Math.sqrt(canvas.width * canvas.height * 0.2 * 0.2)
+							);
+
+							ctx.globalAlpha = 0.75;
+
+                            ctx.drawImage(
+								watermark,
+								canvas.width - wmHeight - Math.round(0.05 * wmHeight),
+								canvas.height - wmHeight + Math.round(0.22 * wmHeight),
+								wmHeight,
+								wmHeight
+							);
+							);*/
+
+							// Kreiraj promise za svaku kompresiju slike
+							let promise = new Promise((resolve) => {
+								compressImage(canvas, (compressedBlob) => {
+									zip.file(
+										`${
+											document.getElementById("imenovanje").value
+										}_${brojac}.jpg`,
+										compressedBlob
+									);
+									// Prikaži sliku u pregledu
+									const previewImage = document.createElement("img");
+									previewImage.src = URL.createObjectURL(compressedBlob);
+									previewImage.style.maxHeight = "150px";
+									previewImage.style.margin = "5px";
+									previewContainer.appendChild(previewImage);
+									resolve(); // Obavesti da je ova slika završena
+								});
+							});
+
+							processedImages.push(promise);
+						}
+
+						// Čekaj da SVE slike budu dodane prije generiranja ZIP-a
+						await Promise.all(processedImages);
+
+						zip
+							.generateAsync(
+								{ type: "blob", compression: "STORE" },
+								(metadata) => {
+									const progressBar = document.getElementById("progress-bar");
+									stanje.innerHTML = `GENERIRANJE ZIPA ${
+										Math.round(metadata.percent * 100) / 100
+									}%`;
+
+									progressBar.style.display = "block"; // Prikaži progress bar
+									progressBar.value = (metadata.percent || 0).toFixed(0); // Postavi postotak
+								}
+							)
+							.then((content) => {
+								saveAs(
+									content,
+									`${document.getElementById("imenovanje").value}.zip`
+								);
+								document.getElementById("progress-bar").style.display = "none"; // Sakrij progress bar kad završi
+							});
+					};
+				};
+			}
+
+			function processImages_fw() {
+				//const resizeValue = parseInt(document.getElementById("resize-input").value) || 500;
+				const resizeValue = 2048;
+				const previewContainer = document.getElementById("preview-container");
+				previewContainer.innerHTML = ""; // Očisti prethodne slike
+
+				const overlay = new Image();
+				overlay.src = "./plavi_filter.png";
+				const watermark = new Image();
+				watermark.src = "./FOTO_watermark.png";
+
+				overlay.onload = () => {
+					watermark.onload = async () => {
+						const zip = new JSZip();
+						let processedImages = []; // Svi procesirani outputi će se ovde spremati
+
+						for (let i = 0; i < images.length; i++) {
+							let src = images[i]; // Svaka slika posebno
+							let brojac = i + 1; // Brojimo slike od 1 nadalje
+
+							stanje.innerHTML = `Učitano fotki: ${brojac}`;
+
+							const img = new Image();
+							img.src = src;
+							await new Promise((resolve) => (img.onload = resolve));
+
+							const canvas = document.createElement("canvas");
+							const ctx = canvas.getContext("2d");
+
+							let scale = resizeValue / Math.min(img.width, img.height);
+							canvas.width = img.width * scale;
+							canvas.height = img.height * scale;
+
+							ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+							ctx.globalAlpha = 1;
+							ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+
+							let wmHeight = Math.round(
+								Math.sqrt(canvas.width * canvas.height * 0.2 * 0.2)
+							);
+
+							ctx.globalAlpha = 0.75;
+
+							ctx.drawImage(
+								watermark,
+								canvas.width - wmHeight - Math.round(0.05 * wmHeight),
+								canvas.height - wmHeight + Math.round(0.22 * wmHeight),
+								wmHeight,
+								wmHeight
+							);
+
+							// Kreiraj promise za svaku kompresiju slike
+							let promise = new Promise((resolve) => {
+								compressImage(canvas, (compressedBlob) => {
+									zip.file(
+										`${
+											document.getElementById("imenovanje").value
+										}_${brojac}.jpg`,
+										compressedBlob
+									);
+									// Prikaži sliku u pregledu
+									const previewImage = document.createElement("img");
+									previewImage.src = URL.createObjectURL(compressedBlob);
+									previewImage.style.maxHeight = "150px";
+									previewImage.style.margin = "5px";
+									previewContainer.appendChild(previewImage);
+									resolve(); // Obavesti da je ova slika završena
+								});
+							});
+
+							processedImages.push(promise);
+						}
+
+						// Čekaj da SVE slike budu dodane prije generiranja ZIP-a
+						await Promise.all(processedImages);
+
+						zip
+							.generateAsync(
+								{ type: "blob", compression: "STORE" },
+								(metadata) => {
+									stanje.innerHTML = `GENERIRANJE ZIPA ${
+										Math.round(metadata.percent * 100) / 100
+									}%`;
+
+									const progressBar = document.getElementById("progress-bar");
+									progressBar.style.display = "block"; // Prikaži progress bar
+									progressBar.value = (metadata.percent || 0).toFixed(0); // Postavi postotak
+								}
+							)
+							.then((content) => {
+								saveAs(
+									content,
+									`${document.getElementById("imenovanje").value}.zip`
+								);
+								document.getElementById("progress-bar").style.display = "none"; // Sakrij progress bar kad završi
+							});
+					};
+				};
+			}
+		</script>
+	</body>
+</html>
