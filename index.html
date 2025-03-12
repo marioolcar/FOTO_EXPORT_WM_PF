@@ -99,10 +99,10 @@
 		<!--	<input type="number" id="resize-input" placeholder="Kraća stranica (px)" /> -->
 		<input type="text" id="imenovanje" placeholder="Imenovanje" />
 
-		<button onclick="processImages_bb()">bb</button>
-		<button onclick="processImages_bw()">bw</button>
-		<button onclick="processImages_fb()">fb</button>
-		<button onclick="processImages_fw()">fw</button>
+		<button onclick="processImages(0,0)">bb</button>
+		<button onclick="processImages(0,1)">bw</button>
+		<button onclick="processImages(1,0)">fb</button>
+		<button onclick="processImages(1,1)">fw</button>
 
 		<div id="stanje"></div>
 		<progress
@@ -180,7 +180,7 @@
 				document.getElementById("drop-area").innerHTML = fileListHTML;
 			}
 
-			function processImages_bw() {
+			function processImages(filter_bool, watermark_bool) {
 				//const resizeValue = parseInt(document.getElementById("resize-input").value) || 500;
 				const resizeValue = 2048;
 				const previewContainer = document.getElementById("preview-container");
@@ -214,219 +214,27 @@
 							canvas.height = img.height * scale;
 
 							ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-							ctx.globalAlpha = 0.75;
 
-							let wmHeight = Math.round(
-								Math.sqrt(canvas.width * canvas.height * 0.2 * 0.2)
-							);
-							ctx.drawImage(
-								watermark,
-								canvas.width - wmHeight - Math.round(0.05 * wmHeight),
-								canvas.height - wmHeight + Math.round(0.22 * wmHeight),
-								wmHeight,
-								wmHeight
-							);
+							if (filter_bool == 1) {
+								ctx.globalAlpha = 1;
+								ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+							}
 
-							// Kreiraj promise za svaku kompresiju slike
-							let promise = new Promise((resolve) => {
-								compressImage(canvas, (compressedBlob) => {
-									zip.file(
-										`${
-											document.getElementById("imenovanje").value
-										}_${brojac}.jpg`,
-										compressedBlob
-									);
-									// Prikaži sliku u pregledu
-									const previewImage = document.createElement("img");
-									previewImage.src = URL.createObjectURL(compressedBlob);
-									previewImage.style.maxHeight = "150px";
-									previewImage.style.margin = "5px";
-									previewContainer.appendChild(previewImage);
-									resolve(); // Obavesti da je ova slika završena
-								});
-							});
+							if (watermark_bool == 1) {
+								ctx.globalAlpha = 0.75;
 
-							processedImages.push(promise);
-						}
-
-						// Čekaj da SVE slike budu dodane prije generiranja ZIP-a
-						await Promise.all(processedImages);
-
-						zip
-							.generateAsync(
-								{ type: "blob", compression: "STORE" },
-								(metadata) => {
-									stanje.innerHTML = `GENERIRANJE ZIPA ${
-										Math.round(metadata.percent * 100) / 100
-									}%`;
-
-									const progressBar = document.getElementById("progress-bar");
-									progressBar.style.display = "block"; // Prikaži progress bar
-									progressBar.value = (metadata.percent || 0).toFixed(0); // Postavi postotak
-								}
-							)
-							.then((content) => {
-								saveAs(
-									content,
-									`${document.getElementById("imenovanje").value}.zip`
+								let wmHeight = Math.round(
+									Math.sqrt(canvas.width * canvas.height * 0.2 * 0.2)
 								);
-								document.getElementById("progress-bar").style.display = "none"; // Sakrij progress bar kad završi
-							});
-					};
-				};
-			}
 
-			function processImages_bb() {
-				//const resizeValue = parseInt(document.getElementById("resize-input").value) || 500;
-				const resizeValue = 2048;
-				const previewContainer = document.getElementById("preview-container");
-				previewContainer.innerHTML = ""; // Očisti prethodne slike
-
-				const overlay = new Image();
-				overlay.src = "./plavi_filter.png";
-				const watermark = new Image();
-				watermark.src = "./FOTO_watermark.png";
-
-				overlay.onload = () => {
-					watermark.onload = async () => {
-						const zip = new JSZip();
-						let processedImages = []; // Svi procesirani outputi će se ovde spremati
-
-						for (let i = 0; i < images.length; i++) {
-							let src = images[i]; // Svaka slika posebno
-							let brojac = i + 1; // Brojimo slike od 1 nadalje
-
-							stanje.innerHTML = `Učitano fotki: ${brojac}`;
-
-							const img = new Image();
-							img.src = src;
-							await new Promise((resolve) => (img.onload = resolve));
-
-							const canvas = document.createElement("canvas");
-							const ctx = canvas.getContext("2d");
-
-							let scale = resizeValue / Math.min(img.width, img.height);
-							canvas.width = img.width * scale;
-							canvas.height = img.height * scale;
-
-							ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-							ctx.globalAlpha = 0.75;
-
-							let wmHeight = Math.round(
-								Math.sqrt(canvas.width * canvas.height * 0.2 * 0.2)
-							);
-							/*ctx.drawImage(
-								watermark,
-								canvas.width - wmHeight - Math.round(0.05 * wmHeight),
-								canvas.height - wmHeight + Math.round(0.22 * wmHeight),
-								wmHeight,
-								wmHeight
-							);
-							*/
-
-							// Kreiraj promise za svaku kompresiju slike
-							let promise = new Promise((resolve) => {
-								compressImage(canvas, (compressedBlob) => {
-									zip.file(
-										`${
-											document.getElementById("imenovanje").value
-										}_${brojac}.jpg`,
-										compressedBlob
-									);
-									// Prikaži sliku u pregledu
-									const previewImage = document.createElement("img");
-									previewImage.src = URL.createObjectURL(compressedBlob);
-									previewImage.style.maxHeight = "150px";
-									previewImage.style.margin = "5px";
-									previewContainer.appendChild(previewImage);
-									resolve(); // Obavesti da je ova slika završena
-								});
-							});
-
-							processedImages.push(promise);
-						}
-
-						// Čekaj da SVE slike budu dodane prije generiranja ZIP-a
-						await Promise.all(processedImages);
-
-						zip
-							.generateAsync(
-								{ type: "blob", compression: "STORE" },
-								(metadata) => {
-									const progressBar = document.getElementById("progress-bar");
-									stanje.innerHTML = `GENERIRANJE ZIPA ${
-										Math.round(metadata.percent * 100) / 100
-									}%`;
-
-									progressBar.style.display = "block"; // Prikaži progress bar
-									progressBar.value = (metadata.percent || 0).toFixed(0); // Postavi postotak
-								}
-							)
-							.then((content) => {
-								saveAs(
-									content,
-									`${document.getElementById("imenovanje").value}.zip`
+								ctx.drawImage(
+									watermark,
+									canvas.width - wmHeight - Math.round(0.05 * wmHeight),
+									canvas.height - wmHeight + Math.round(0.22 * wmHeight),
+									wmHeight,
+									wmHeight
 								);
-								document.getElementById("progress-bar").style.display = "none"; // Sakrij progress bar kad završi
-							});
-					};
-				};
-			}
-
-			function processImages_fb() {
-				//const resizeValue = parseInt(document.getElementById("resize-input").value) || 500;
-				const resizeValue = 2048;
-				const previewContainer = document.getElementById("preview-container");
-				previewContainer.innerHTML = ""; // Očisti prethodne slike
-
-				const overlay = new Image();
-				overlay.src = "./plavi_filter.png";
-				const watermark = new Image();
-				watermark.src = "./FOTO_watermark.png";
-
-				overlay.onload = () => {
-					watermark.onload = async () => {
-						const zip = new JSZip();
-						let processedImages = []; // Svi procesirani outputi će se ovde spremati
-
-						for (let i = 0; i < images.length; i++) {
-							let src = images[i]; // Svaka slika posebno
-							let brojac = i + 1; // Brojimo slike od 1 nadalje
-
-							stanje.innerHTML = `Učitano fotki: ${brojac}`;
-
-							const img = new Image();
-							img.src = src;
-							await new Promise((resolve) => (img.onload = resolve));
-
-							const canvas = document.createElement("canvas");
-							const ctx = canvas.getContext("2d");
-
-							let scale = resizeValue / Math.min(img.width, img.height);
-							canvas.width = img.width * scale;
-							canvas.height = img.height * scale;
-
-							ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-							ctx.globalAlpha = 1;
-							ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
-
-							/*
-
-                            let wmHeight = Math.round(
-								Math.sqrt(canvas.width * canvas.height * 0.2 * 0.2)
-							);
-
-							ctx.globalAlpha = 0.75;
-
-                            ctx.drawImage(
-								watermark,
-								canvas.width - wmHeight - Math.round(0.05 * wmHeight),
-								canvas.height - wmHeight + Math.round(0.22 * wmHeight),
-								wmHeight,
-								wmHeight
-							);
-							);*/
+							}
 
 							// Kreiraj promise za svaku kompresiju slike
 							let promise = new Promise((resolve) => {
@@ -462,107 +270,6 @@
 										Math.round(metadata.percent * 100) / 100
 									}%`;
 
-									progressBar.style.display = "block"; // Prikaži progress bar
-									progressBar.value = (metadata.percent || 0).toFixed(0); // Postavi postotak
-								}
-							)
-							.then((content) => {
-								saveAs(
-									content,
-									`${document.getElementById("imenovanje").value}.zip`
-								);
-								document.getElementById("progress-bar").style.display = "none"; // Sakrij progress bar kad završi
-							});
-					};
-				};
-			}
-
-			function processImages_fw() {
-				//const resizeValue = parseInt(document.getElementById("resize-input").value) || 500;
-				const resizeValue = 2048;
-				const previewContainer = document.getElementById("preview-container");
-				previewContainer.innerHTML = ""; // Očisti prethodne slike
-
-				const overlay = new Image();
-				overlay.src = "./plavi_filter.png";
-				const watermark = new Image();
-				watermark.src = "./FOTO_watermark.png";
-
-				overlay.onload = () => {
-					watermark.onload = async () => {
-						const zip = new JSZip();
-						let processedImages = []; // Svi procesirani outputi će se ovde spremati
-
-						for (let i = 0; i < images.length; i++) {
-							let src = images[i]; // Svaka slika posebno
-							let brojac = i + 1; // Brojimo slike od 1 nadalje
-
-							stanje.innerHTML = `Učitano fotki: ${brojac}`;
-
-							const img = new Image();
-							img.src = src;
-							await new Promise((resolve) => (img.onload = resolve));
-
-							const canvas = document.createElement("canvas");
-							const ctx = canvas.getContext("2d");
-
-							let scale = resizeValue / Math.min(img.width, img.height);
-							canvas.width = img.width * scale;
-							canvas.height = img.height * scale;
-
-							ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-							ctx.globalAlpha = 1;
-							ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
-
-							let wmHeight = Math.round(
-								Math.sqrt(canvas.width * canvas.height * 0.2 * 0.2)
-							);
-
-							ctx.globalAlpha = 0.75;
-
-							ctx.drawImage(
-								watermark,
-								canvas.width - wmHeight - Math.round(0.05 * wmHeight),
-								canvas.height - wmHeight + Math.round(0.22 * wmHeight),
-								wmHeight,
-								wmHeight
-							);
-
-							// Kreiraj promise za svaku kompresiju slike
-							let promise = new Promise((resolve) => {
-								compressImage(canvas, (compressedBlob) => {
-									zip.file(
-										`${
-											document.getElementById("imenovanje").value
-										}_${brojac}.jpg`,
-										compressedBlob
-									);
-									// Prikaži sliku u pregledu
-									const previewImage = document.createElement("img");
-									previewImage.src = URL.createObjectURL(compressedBlob);
-									previewImage.style.maxHeight = "150px";
-									previewImage.style.margin = "5px";
-									previewContainer.appendChild(previewImage);
-									resolve(); // Obavesti da je ova slika završena
-								});
-							});
-
-							processedImages.push(promise);
-						}
-
-						// Čekaj da SVE slike budu dodane prije generiranja ZIP-a
-						await Promise.all(processedImages);
-
-						zip
-							.generateAsync(
-								{ type: "blob", compression: "STORE" },
-								(metadata) => {
-									stanje.innerHTML = `GENERIRANJE ZIPA ${
-										Math.round(metadata.percent * 100) / 100
-									}%`;
-
-									const progressBar = document.getElementById("progress-bar");
 									progressBar.style.display = "block"; // Prikaži progress bar
 									progressBar.value = (metadata.percent || 0).toFixed(0); // Postavi postotak
 								}
