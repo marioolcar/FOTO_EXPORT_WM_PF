@@ -239,12 +239,22 @@
 							// Kreiraj promise za svaku kompresiju slike
 							let promise = new Promise((resolve) => {
 								compressImage(canvas, (compressedBlob) => {
-									zip.file(
-										`${
-											document.getElementById("imenovanje").value
-										}_${brojac}.jpg`,
-										compressedBlob
-									);
+									if (brojac < 10) {
+										zip.file(
+											`${
+												document.getElementById("imenovanje").value
+											}_0${brojac}.jpg`,
+											compressedBlob
+										);
+									} else {
+										zip.file(
+											`${
+												document.getElementById("imenovanje").value
+											}_${brojac}.jpg`,
+											compressedBlob
+										);
+									}
+
 									// Prikaži sliku u pregledu
 									const previewImage = document.createElement("img");
 									previewImage.src = URL.createObjectURL(compressedBlob);
