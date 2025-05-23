@@ -181,52 +181,49 @@
 			}
 
 			function processImages(filter_bool, watermark_bool) {
-				//const resizeValue = parseInt(document.getElementById("resize-input").value) || 500;
 				const resizeValue = 2048;
 				const previewContainer = document.getElementById("preview-container");
-				previewContainer.innerHTML = ""; // Očisti prethodne slike
+				previewContainer.innerHTML = "";
 
 				const overlay = new Image();
 				overlay.src = "./plavi_filter.png";
 				const watermark = new Image();
 				watermark.src = "./FOTO_watermark.png";
 
-				overlay.onload = () => {
-					watermark.onload = async () => {
-						const zip = new JSZip();
-						let processedImages = []; // Svi procesirani outputi će se ovde spremati
-
-						for (let i = 0; i < images.length; i++) {
-							let src = images[i]; // Svaka slika posebno
-							let brojac = i + 1; // Brojimo slike od 1 nadalje
-
+				Promise.all([
+					new Promise((resolve) => (overlay.onload = resolve)),
+					new Promise((resolve) => (watermark.onload = resolve)),
+				]).then(async () => {
+					const zip = new JSZip();
+					const processingPromises = images.map((src, index) => {
+						return new Promise(async (resolve) => {
+							const brojac = index + 1;
 							stanje.innerHTML = `Učitano fotki: ${brojac}`;
 
 							const img = new Image();
 							img.src = src;
-							await new Promise((resolve) => (img.onload = resolve));
+							await img.decode(); // Brže i pouzdanije
 
 							const canvas = document.createElement("canvas");
 							const ctx = canvas.getContext("2d");
 
-							let scale = resizeValue / Math.max(img.width, img.height);
+							// Skala za DULJU stranu (umjesto kraće)
+							const scale = resizeValue / Math.max(img.width, img.height);
 							canvas.width = img.width * scale;
 							canvas.height = img.height * scale;
 
 							ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-							if (filter_bool == 1) {
+							if (filter_bool === 1) {
 								ctx.globalAlpha = 1;
 								ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
 							}
 
-							if (watermark_bool == 1) {
+							if (watermark_bool === 1) {
 								ctx.globalAlpha = 0.75;
-
 								let wmHeight = Math.round(
-									Math.sqrt(canvas.width * canvas.height * 0.2 * 0.2)
-								);
-
+									Math.sqrt(canvas.width * canvas.height * 0.04)
+								); // 20% površine
 								ctx.drawImage(
 									watermark,
 									canvas.width - wmHeight - Math.round(0.05 * wmHeight),
@@ -236,63 +233,45 @@
 								);
 							}
 
-							// Kreiraj promise za svaku kompresiju slike
-							let promise = new Promise((resolve) => {
-								compressImage(canvas, (compressedBlob) => {
-									if (brojac < 10) {
-										zip.file(
-											`${
-												document.getElementById("imenovanje").value
-											}_0${brojac}.jpg`,
-											compressedBlob
-										);
-									} else {
-										zip.file(
-											`${
-												document.getElementById("imenovanje").value
-											}_${brojac}.jpg`,
-											compressedBlob
-										);
-									}
+							compressImage(canvas, (compressedBlob) => {
+								const fileName = `${
+									document.getElementById("imenovanje").value
+								}_${brojac.toString().padStart(2, "0")}.jpg`;
+								zip.file(fileName, compressedBlob);
 
-									// Prikaži sliku u pregledu
-									const previewImage = document.createElement("img");
-									previewImage.src = URL.createObjectURL(compressedBlob);
-									previewImage.style.maxHeight = "150px";
-									previewImage.style.margin = "5px";
-									previewContainer.appendChild(previewImage);
-									resolve(); // Obavesti da je ova slika završena
-								});
+								// Prikaz samo prvih 5 previewa (za brzinu)
+								const previewImage = document.createElement("img");
+								previewImage.src = URL.createObjectURL(compressedBlob);
+								previewImage.style.maxHeight = "150px";
+								previewImage.style.margin = "5px";
+								previewContainer.appendChild(previewImage);
+								resolve();
 							});
+						});
+					});
 
-							processedImages.push(promise);
-						}
+					await Promise.all(processingPromises);
 
-						// Čekaj da SVE slike budu dodane prije generiranja ZIP-a
-						await Promise.all(processedImages);
-
-						zip
-							.generateAsync(
-								{ type: "blob", compression: "STORE" },
-								(metadata) => {
-									const progressBar = document.getElementById("progress-bar");
-									stanje.innerHTML = `GENERIRANJE ZIPA ${
-										Math.round(metadata.percent * 100) / 100
-									}%`;
-
-									progressBar.style.display = "block"; // Prikaži progress bar
-									progressBar.value = (metadata.percent || 0).toFixed(0); // Postavi postotak
-								}
-							)
-							.then((content) => {
-								saveAs(
-									content,
-									`${document.getElementById("imenovanje").value}.zip`
-								);
-								document.getElementById("progress-bar").style.display = "none"; // Sakrij progress bar kad završi
-							});
-					};
-				};
+					zip
+						.generateAsync(
+							{ type: "blob", compression: "DEFLATE" },
+							(metadata) => {
+								const progressBar = document.getElementById("progress-bar");
+								stanje.innerHTML = `GENERIRANJE ZIPA ${
+									Math.round(metadata.percent * 100) / 100
+								}%`;
+								progressBar.style.display = "block";
+								progressBar.value = (metadata.percent || 0).toFixed(0);
+							}
+						)
+						.then((content) => {
+							saveAs(
+								content,
+								`${document.getElementById("imenovanje").value}.zip`
+							);
+							document.getElementById("progress-bar").style.display = "none";
+						});
+				});
 			}
 		</script>
 	</body>
