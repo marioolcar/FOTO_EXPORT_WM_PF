@@ -69,11 +69,15 @@
 				font-size: 18px;
 				border-radius: 5px;
 				cursor: pointer;
-				transition: background-color 0.3s ease;
+				transition: background-color 0.3s ease, transform 0.2s ease,
+					box-shadow 0.2s ease;
+				box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 			}
 
 			button:hover {
 				background-color: #0056b3;
+				transform: translateY(-2px);
+				box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
 			}
 
 			#stanje {
@@ -91,6 +95,36 @@
 					width: 90%;
 				}
 			}
+			.tooltip {
+				position: relative;
+				display: inline-block;
+				margin: 10px;
+			}
+
+			.tooltip .tooltiptext {
+				visibility: hidden;
+				background-color: #333;
+				color: #fff;
+				text-align: center;
+				border-radius: 6px;
+				padding: 6px 10px;
+				position: absolute;
+				z-index: 1;
+				bottom: 140%;
+				left: 50%;
+				transform: translateX(-50%) scale(0.95);
+				opacity: 0;
+				transition: opacity 0.3s ease, transform 0.3s ease;
+				font-size: 14px;
+				white-space: nowrap;
+				pointer-events: none;
+			}
+
+			.tooltip:hover .tooltiptext {
+				visibility: visible;
+				opacity: 1;
+				transform: translateX(-50%) scale(1);
+			}
 		</style>
 	</head>
 	<body>
@@ -99,10 +133,25 @@
 		<!--	<input type="number" id="resize-input" placeholder="Kraća stranica (px)" /> -->
 		<input type="text" id="imenovanje" placeholder="Imenovanje" />
 
-		<button onclick="processImages(0,0)">bb</button>
-		<button onclick="processImages(0,1)">bw</button>
-		<button onclick="processImages(1,0)">fb</button>
-		<button onclick="processImages(1,1)">fw</button>
+		<div class="tooltip">
+			<button onclick="processImages(0,0)">bb</button>
+			<span class="tooltiptext">Bez filtera, bez watermarka</span>
+		</div>
+
+		<div class="tooltip">
+			<button onclick="processImages(0,1)">bw</button>
+			<span class="tooltiptext">Bez filtera, s watermarkom</span>
+		</div>
+
+		<div class="tooltip">
+			<button onclick="processImages(1,0)">fb</button>
+			<span class="tooltiptext">S plavim filterom, bez watermarka</span>
+		</div>
+
+		<div class="tooltip">
+			<button onclick="processImages(1,1)">fw</button>
+			<span class="tooltiptext">S plavim filterom i watermarkom</span>
+		</div>
 
 		<div id="stanje"></div>
 		<progress
