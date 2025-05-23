@@ -125,6 +125,84 @@
 				opacity: 1;
 				transform: translateX(-50%) scale(1);
 			}
+
+			#progress-bar {
+				appearance: none;
+				width: 100%;
+				height: 20px;
+				border-radius: 10px;
+				overflow: hidden;
+				background-color: #e0e0e0;
+				display: none;
+				margin-top: 10px;
+				margin-bottom: 10px;
+			}
+
+			/* Firefox */
+			#progress-bar::-moz-progress-bar {
+				background: linear-gradient(270deg, #007bff, #00d4ff);
+				background-size: 200% 100%;
+				animation: moveGradient 2s linear infinite;
+			}
+
+			/* Chrome & Webkit */
+			#progress-bar::-webkit-progress-bar {
+				background-color: #e0e0e0;
+				border-radius: 10px;
+			}
+
+			#progress-bar::-webkit-progress-value {
+				background: linear-gradient(270deg, #007bff, #00d4ff);
+				background-size: 200% 100%;
+				animation: moveGradient 2s linear infinite;
+				border-radius: 10px;
+			}
+
+			@keyframes moveGradient {
+				0% {
+					background-position: 200% 0;
+				}
+				100% {
+					background-position: -200% 0;
+				}
+			}
+
+			#preview-loading-bar {
+				height: 20px;
+				width: 100%;
+				background-color: #e0e0e0;
+				border-radius: 10px;
+				overflow: hidden;
+				margin-top: 10px;
+
+				opacity: 0;
+				transition: opacity 0.5s ease;
+				visibility: hidden;
+			}
+
+			#preview-loading-bar.visible {
+				opacity: 1;
+				visibility: visible;
+			}
+
+			#preview-loading-bar .progress-fill {
+				height: 100%;
+				width: 0%;
+				background: linear-gradient(270deg, #007bff, #00d4ff);
+				background-size: 200% 100%;
+				animation: moveGradient 2s linear infinite;
+				border-radius: 10px;
+				transition: width 0.3s ease;
+			}
+
+			@keyframes moveGradient {
+				0% {
+					background-position: 200% 0;
+				}
+				100% {
+					background-position: -200% 0;
+				}
+			}
 		</style>
 	</head>
 	<body>
@@ -151,6 +229,10 @@
 		<div class="tooltip">
 			<button onclick="processImages(1,1)">fw</button>
 			<span class="tooltiptext">S plavim filterom i watermarkom</span>
+		</div>
+
+		<div id="preview-loading-bar">
+			<div class="progress-fill"></div>
 		</div>
 
 		<div id="stanje"></div>
@@ -233,8 +315,13 @@
 				//const resizeValue = parseInt(document.getElementById("resize-input").value) || 500;
 				const resizeValue = 2048;
 				const previewContainer = document.getElementById("preview-container");
-				previewContainer.innerHTML = ""; // Očisti prethodne slike
-
+				previewContainer.innerHTML = "";
+				const previewLoadingBar = document.getElementById(
+					"preview-loading-bar"
+				);
+				const progressFill = previewLoadingBar.querySelector(".progress-fill");
+				previewLoadingBar.classList.add("visible");
+				progressFill.style.width = "0%";
 				const overlay = new Image();
 				overlay.src = "./plavi_filter.png";
 				const watermark = new Image();
@@ -310,6 +397,12 @@
 									previewImage.style.maxHeight = "150px";
 									previewImage.style.margin = "5px";
 									previewContainer.appendChild(previewImage);
+									// Update progress fill
+									progressFill.style.width = `${(
+										(brojac / images.length) *
+										100
+									).toFixed(0)}%`;
+
 									resolve(); // Obavesti da je ova slika završena
 								});
 							});
@@ -319,6 +412,9 @@
 
 						// Čekaj da SVE slike budu dodane prije generiranja ZIP-a
 						await Promise.all(processedImages);
+						setTimeout(() => {
+							previewLoadingBar.classList.remove("visible");
+						}, 300); // 300ms da se animacija završi
 
 						zip
 							.generateAsync(
