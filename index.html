@@ -209,7 +209,7 @@
 							const canvas = document.createElement("canvas");
 							const ctx = canvas.getContext("2d");
 
-							let scale = resizeValue / Math.min(img.width, img.height);
+							let scale = resizeValue / Math.max(img.width, img.height);
 							canvas.width = img.width * scale;
 							canvas.height = img.height * scale;
 
