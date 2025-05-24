@@ -114,7 +114,7 @@
 				left: 50%;
 				transform: translateX(-50%) scale(0.95);
 				opacity: 0;
-				transition: opacity 0.3s ease, transform 0.3s ease;
+				transition: opacity 0.1s ease, transform 0.1s ease;
 				font-size: 14px;
 				white-space: nowrap;
 				pointer-events: none;
@@ -142,7 +142,7 @@
 			#progress-bar::-moz-progress-bar {
 				background: linear-gradient(270deg, #007bff, #00d4ff);
 				background-size: 200% 100%;
-				animation: moveGradient 2s linear infinite;
+				animation: moveGradient 0.3s linear infinite;
 			}
 
 			/* Chrome & Webkit */
@@ -154,7 +154,7 @@
 			#progress-bar::-webkit-progress-value {
 				background: linear-gradient(270deg, #007bff, #00d4ff);
 				background-size: 200% 100%;
-				animation: moveGradient 2s linear infinite;
+				animation: moveGradient 0.3s linear infinite;
 				border-radius: 10px;
 			}
 
@@ -192,7 +192,7 @@
 				background-size: 200% 100%;
 				animation: moveGradient 2s linear infinite;
 				border-radius: 10px;
-				transition: width 0.3s ease;
+				transition: width 0.4s ease-in-out;
 			}
 
 			@keyframes moveGradient {
@@ -245,6 +245,24 @@
 
 		<div id="preview-container"></div>
 		<script>
+			let lastProgressPercent = 0; // pamti zadnji postotak
+
+			function smoothUpdateProgress(percent) {
+				const progressFill = document.querySelector(
+					"#preview-loading-bar .progress-fill"
+				);
+
+				// Zaokruži na najbliži cijeli broj za usporedbu
+				const roundedNew = Math.round(percent);
+				const roundedLast = Math.round(lastProgressPercent);
+
+				// Ako se promjena razlikuje više od 1%, ažuriraj bar
+				if (Math.abs(roundedNew - roundedLast) >= 1) {
+					progressFill.style.width = `${roundedNew}%`;
+					lastProgressPercent = roundedNew;
+				}
+			}
+
 			function compressImage(
 				canvas,
 				callback,
@@ -294,21 +312,28 @@
 			});
 
 			function handleFiles(files) {
-				let fileListHTML = "<strong>Dodane slike:</strong><br>"; // Početak liste
+				const fileListHTML = ["<strong>Dodane slike:</strong><br>"];
+				const readPromises = [];
 
 				for (let file of files) {
 					if (file.type.startsWith("image/")) {
-						const reader = new FileReader();
-						reader.onload = (event) => images.push(event.target.result);
-						reader.readAsDataURL(file);
+						fileListHTML.push(`${file.name}<br>`);
 
-						// Dodaj ime u listu
-						fileListHTML += `${file.name}<br>`;
+						const readPromise = new Promise((resolve) => {
+							const reader = new FileReader();
+							reader.onload = (event) => resolve(event.target.result);
+							reader.readAsDataURL(file);
+						});
+
+						readPromises.push(readPromise);
 					}
 				}
 
-				// Prikaži listu u drop-area
-				document.getElementById("drop-area").innerHTML = fileListHTML;
+				Promise.all(readPromises).then((results) => {
+					images = results;
+					document.getElementById("drop-area").innerHTML =
+						fileListHTML.join("");
+				});
 			}
 
 			function processImages(filter_bool, watermark_bool) {
@@ -398,10 +423,7 @@
 									previewImage.style.margin = "5px";
 									previewContainer.appendChild(previewImage);
 									// Update progress fill
-									progressFill.style.width = `${(
-										(brojac / images.length) *
-										100
-									).toFixed(0)}%`;
+									smoothUpdateProgress((brojac / images.length) * 100);
 
 									resolve(); // Obavesti da je ova slika završena
 								});
